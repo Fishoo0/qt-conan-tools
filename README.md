@@ -1,0 +1,1 @@
+# conan qt tools for tal
