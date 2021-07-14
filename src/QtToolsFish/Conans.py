@@ -4,16 +4,27 @@ Author: Fish
 Currently, we only support 5.15.x vs2019
 
 '''
+import logging
 import os
 
-import conans
 from conans import ConanFile
+
+from . import conans_tools
 
 
 class QMake:
     build_cmd = ""
 
-    def __init__(self, qt_version, arch, build_type, pro_file, out_dir="%cd%", vs_version="2019"):
+    def __init__(self, conan_file, qt_version=None, arch=None, build_type=None, pro_file=None, out_dir="%cd%",
+                 vs_version="2019"):
+        if qt_version is None:
+            qt_version = conan_file.options.qt_version
+        if arch is None:
+            arch = conan_file.settings.arch
+        if build_type is None:
+            build_type = conan_file.settings.build_type
+        if pro_file is None:
+            pro_file = conan_file.name
         self.qt_version = qt_version
         self.arch = arch
         self.build_type = build_type
@@ -26,12 +37,6 @@ class QMake:
         print("pro_file -> " + str(pro_file))
         print("out_dir -> " + str(out_dir))
         print("vs_version -> " + str(vs_version))
-
-    @classmethod
-    def conan_file(cls, conan_file, out_dir="%cd%", vs_version="2019"):
-        return cls(qt_version=conan_file.options.qt_version, arch=conan_file.settings.arch,
-                   build_type=conan_file.settings.build_type, pro_file=conan_file.name, out_dir=out_dir,
-                   vs_version=vs_version)
 
     def is_x64(self):
         if str(self.arch).lower().find("64") == -1:
@@ -94,5 +99,61 @@ class QMake:
             debug_config = ""
         self.append_cmd(f"qmake {self.pro_file} -spec win32-msvc \"CONFIG+=qtquickcompiler\" {debug_config}")
         self.append_cmd("jom")
-        print("cmd is -> " + self.build_cmd)
+        logging.getLogger("QtTools").error("cmd is -> " + self.build_cmd)
         os.system(self.build_cmd)
+
+
+class QtConanFile(ConanFile):
+    """
+    This is a Qt extended ConanFile
+    """
+    TAG = "QtConanFile"
+    name = "Your Project Name"
+    version = "master"
+    license = "All rights by fish"
+    author = "Fish"
+    url = "https://www.github.com"
+    description = "This is a library from fish."
+    topics = ("qt", "conan", "library")
+    settings = "os", "compiler", "build_type", "arch"
+    options = {"qt_version": ["5.15.0", "5.15.2"]}
+    default_options = {"qt_version": "5.15.0"}
+    generators = "qmake", "cmake"
+
+    # requires = "xxx/xxx"
+    # exports_sources = "*"
+
+    def log(self, msg):
+        print(f"{self.TAG}: {msg}")
+
+    # def package_id(self):
+    #     del self.info.settings.build_type
+
+    def configure(self):
+        self.log("configure")
+        # self.requires.add("QtComposition/master", private=False)
+
+    def source(self):
+        self.log("source")
+        # conans_tools.git_clone(conan_file=self, url="xxx.git", branch="master")
+        # conans_tools.add_conan_requires(conan_file=self, pro_file=f"{self.name}/{str(self.name).lower()}.pro")
+        #
+        #     tools.replace_in_file(pro_file, "TEMPLATE = lib",
+        #                           '''TEMPLATE = lib
+        # CONFIG += conan_basic_setup
+        # include(../conanbuildinfo.pri)
+        # ''')
+
+    def build(self):
+        self.log("build")
+        # QMake(conan_file=self).build()
+
+    def package(self):
+        self.log("package")
+        conans_tools.copy_structure_1(self)
+
+    def package_info(self):
+        self.log("package_info")
+        self.cpp_info.libs = self.collect_libs()
+        # conans_tools.collect_libs_with_qt_debug_tail(conan_file=self)
+
