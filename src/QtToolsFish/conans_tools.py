@@ -163,9 +163,11 @@ def git_clone(target_dir, url, branch="master"):
     os.system(f"git clone --depth 1 --single-branch --branch {branch} {url} {target_dir}")
 
 
-def create(build_type_list=["Release", "Debug"], arch_list=["x86", "x86_64"], qt_versions_list=["5.15.0"]):
+def create(user_channel="", build_type_list=["Release", "Debug"], arch_list=["x86", "x86_64"],
+           qt_versions_list=["5.15.0", "5.15.2"]):
     """
     call conan create to create packages.
+    :param user_channel:
     :param build_type_list:
     :param arch_list:
     :param qt_versions_list:
@@ -177,4 +179,17 @@ def create(build_type_list=["Release", "Debug"], arch_list=["x86", "x86_64"], qt
                 logging.getLogger("QtTools").error(
                     f"QtConanTools: Starting creating arch {arch}, buildType {buildType}, qtVersion {qtVersion}")
                 os.system(
-                    f"conan create . -s arch={arch} -s build_type={buildType} -o qt_version={qtVersion}")
+                    f"conan create . {user_channel} -s arch={arch} -s build_type={buildType} -o qt_version={qtVersion}")
+
+
+def upload(package_version, user_channel=None, server="tal-qt-repository-public", force=False):
+    temp_user_channel = ""
+    temp_force = ""
+    if user_channel is not None:
+        if str(user_channel).find("@") == -1:
+            temp_user_channel = f"@{user_channel}"
+        else:
+            temp_user_channel = user_channel
+    if force:
+        temp_force = "--force"
+    os.system(f"conan upload {package_version}{temp_user_channel} -r={server} {temp_force} --all --confirm")
