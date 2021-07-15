@@ -1,13 +1,13 @@
-'''
+"""
 Author: Fish
 
 Currently, we only support 5.15.x vs2019
 
-'''
+"""
 import logging
 import os
 
-from conans import ConanFile
+from conans import ConanFile, tools
 
 from . import conans_tools
 
@@ -105,7 +105,21 @@ class QMake:
 
 class QtConanFile(ConanFile):
     """
-    This is a Qt extended ConanFile
+    This is a Qt extended ConanFile, we follow the following file structure:
+        -[source]
+            -[self.name]
+        -[build]
+            -[self.name]
+            -[self.build_type]
+            -conaninfo.txt
+            -conanbuildinfo.pri
+        -[package]
+            -[include]
+            -[libs]
+            -[bins]
+            -[self.name]
+
+    if build_type=None, we build debug and release.
     """
     TAG = "QtConanFile"
     name = "Your Project Name"
@@ -123,37 +137,133 @@ class QtConanFile(ConanFile):
     # requires = "xxx/xxx"
     # exports_sources = "*"
 
-    def log(self, msg):
-        print(f"{self.TAG}: {msg}")
+    git_url = None
+    git_branch = "master"
+    enable_qt_debug_tail = False
+    """
+    Enable [self.name]d debug lib name.
+    """
+    enable_debug_and_release_one_package = False
+    """
+    Enable debug and rease in one package
+    """
 
-    # def package_id(self):
-    #     del self.info.settings.build_type
+    def get_src_dir(self):
+        """
+        Getting default src dir
+        :return: [self.name]
+        """
+        return f"./{self.name}/"
+
+    @staticmethod
+    def get_build_debug_dir():
+        """
+        Getting debug dir
+        :return: [debug]
+        """
+        return "./debug/"
+
+    @staticmethod
+    def get_build_release_dir():
+        """
+        Getting release dir
+        :return: [release]
+        """
+        return "./release/"
+
+    def get_build_dir(self):
+        """
+        Getting dir from build_type, only support release & debug
+        :return:
+        """
+        if self.settings.build_type == "Release":
+            return self.get_build_release_dir()
+        elif self.settings.build_type == "Debug":
+            return self.get_build_debug_dir()
+        else:
+            raise Exception("Can not figure build dir")
 
     def configure(self):
-        self.log("configure")
+        self.output.info("configure")
+        if self.enable_debug_and_release_one_package:
+            self.output.info("build_type is None, force enable debug_tail")
+            self.enable_qt_debug_tail = True
         # self.requires.add("QtComposition/master", private=False)
 
+    def package_id(self):
+        self.output.info("package_id")
+        if self.enable_debug_and_release_one_package:
+            del self.info.settings.build_type
+            del self.info.settings.compiler.runtime
+
     def source(self):
-        self.log("source")
-        # conans_tools.git_clone(conan_file=self, url="xxx.git", branch="master")
-        # conans_tools.add_conan_requires(conan_file=self, pro_file=f"{self.name}/{str(self.name).lower()}.pro")
-        #
-        #     tools.replace_in_file(pro_file, "TEMPLATE = lib",
-        #                           '''TEMPLATE = lib
-        # CONFIG += conan_basic_setup
-        # include(../conanbuildinfo.pri)
-        # ''')
+        self.output.info("source")
+        if self.git_url is not None:
+            conans_tools.git_clone(target_dir=f"{self.name}", url=self.git_url, branch=self.git_branch)
+        if len(self.requires) > 0:
+            self.output.info("requires length > 0, append conan requires ")
+            conans_tools.add_conan_requires(
+                pro_file=conans_tools.find_pro_file(conan_file=self, src_dir=self.get_src_dir()),
+                conanbuildinfo_dir="..")
+        if self.enable_qt_debug_tail:
+            self.output.info("enable_qt_debug_tail")
+            conans_tools.enable_qt_debug_tail_d(
+                pro_file=conans_tools.find_pro_file(conan_file=self, src_dir=self.get_src_dir()))
 
     def build(self):
-        self.log("build")
-        # QMake(conan_file=self).build()
+        self.output.info("build")
+        if self.enable_debug_and_release_one_package:
+            self.output.info("build_type is none, build both debug & config")
+            QMake(conan_file=self, build_type="Debug").build()
+            QMake(conan_file=self, build_type="Release").build()
+        elif self.settings.build_type == "Debug" or self.settings.build_type == "Release":
+            self.output.info(f"build_type is -> {self.settings.build_type}")
+            QMake(conan_file=self).build()
+        else:
+            raise Exception(f"Unsupported build type {self.settings.build_type}")
 
     def package(self):
-        self.log("package")
-        conans_tools.copy_structure_1(self)
+        self.output.info("package")
+        self.package_src()
+        self.package_include()
+        self.package_lib()
+        self.package_bin()
+
+    def package_src(self):
+        self.output.info("package_src")
+        conans_tools.copy_src(conan_file=self, src_dir=self.get_src_dir())
+
+    def package_include(self):
+        self.output.info("package_include")
+        conans_tools.copy_includes(conan_file=self, include_dir=self.find_include_dir())
+
+    def package_lib(self):
+        self.output.info("package_lib")
+        if self.enable_debug_and_release_one_package:
+            conans_tools.copy_lib(conan_file=self, lib_dir=self.get_build_debug_dir())
+            conans_tools.copy_lib(conan_file=self, lib_dir=self.get_build_release_dir())
+        else:
+            conans_tools.copy_lib(conan_file=self, lib_dir=self.get_build_dir())
+
+    def package_bin(self):
+        self.output.info("package_bin")
+        if self.enable_debug_and_release_one_package:
+            conans_tools.copy_bin(conan_file=self, bin_dir=self.get_build_debug_dir())
+            conans_tools.copy_bin(conan_file=self, bin_dir=self.get_build_release_dir())
+        else:
+            conans_tools.copy_bin(conan_file=self, bin_dir=self.get_build_dir())
 
     def package_info(self):
-        self.log("package_info")
-        self.cpp_info.libs = self.collect_libs()
-        # conans_tools.collect_libs_with_qt_debug_tail(conan_file=self)
+        self.output.info("package_info")
+        if self.enable_qt_debug_tail:
+            self.collect_libs_with_qt_debug_tail()
+        else:
+            self.cpp_info.libs = tools.collect_libs()
 
+    def collect_libs_with_qt_debug_tail(self):
+        """
+        collect libs: debug -> {conan_file.name}d, release -> {conan_file.name}
+        :return:
+        """
+        self.cpp_info.release.libs = [f"{self.name}"]
+        self.cpp_info.debug.libs = [f"{self.name}d"]
