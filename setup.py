@@ -4,8 +4,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="qt-tools-fish-1",
-    version="0.0.1",
+    name="qt-tools-fish-test1",
+    version="0.0.2",
     author="Fish",
     author_email="790105840@qq.com",
     description="qt conan tools.",

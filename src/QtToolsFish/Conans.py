@@ -15,16 +15,16 @@ from . import conans_tools
 class QMake:
     build_cmd = ""
 
-    def __init__(self, conan_file, qt_version=None, arch=None, build_type=None, pro_file=None, out_dir="%cd%",
+    def __init__(self, conanfile, qt_version=None, arch=None, build_type=None, pro_file=None, out_dir="%cd%",
                  vs_version="2019"):
         if qt_version is None:
-            qt_version = conan_file.options.qt_version
+            qt_version = conanfile.options.qt_version
         if arch is None:
-            arch = conan_file.settings.arch
+            arch = conanfile.settings.arch
         if build_type is None:
-            build_type = conan_file.settings.build_type
+            build_type = conanfile.settings.build_type
         if pro_file is None:
-            pro_file = conan_file.name
+            pro_file = conanfile.name
         self.qt_version = qt_version
         self.arch = arch
         self.build_type = build_type
@@ -115,11 +115,10 @@ class QtConanFile(ConanFile):
             -conanbuildinfo.pri
         -[package]
             -[include]
-            -[libs]
-            -[bins]
+            -[lib]
+            -[bin]
             -[self.name]
 
-    if build_type=None, we build debug and release.
     """
     TAG = "QtConanFile"
     name = "Your Project Name"
@@ -148,7 +147,7 @@ class QtConanFile(ConanFile):
     Enable debug and rease in one package
     """
 
-    def get_src_dir(self):
+    def get_src_folder(self):
         """
         Getting default src dir
         :return: [self.name]
@@ -156,7 +155,7 @@ class QtConanFile(ConanFile):
         return f"./{self.name}/"
 
     @staticmethod
-    def get_build_debug_dir():
+    def get_build_debug_folder():
         """
         Getting debug dir
         :return: [debug]
@@ -164,22 +163,22 @@ class QtConanFile(ConanFile):
         return "./debug/"
 
     @staticmethod
-    def get_build_release_dir():
+    def get_build_release_folder():
         """
         Getting release dir
         :return: [release]
         """
         return "./release/"
 
-    def get_build_dir(self):
+    def get_build_folder(self):
         """
         Getting dir from build_type, only support release & debug
         :return:
         """
         if self.settings.build_type == "Release":
-            return self.get_build_release_dir()
+            return self.get_build_release_folder()
         elif self.settings.build_type == "Debug":
-            return self.get_build_debug_dir()
+            return self.get_build_debug_folder()
         else:
             raise Exception("Can not figure build dir")
 
@@ -203,22 +202,22 @@ class QtConanFile(ConanFile):
         if len(self.requires) > 0:
             self.output.info("requires length > 0, append conan requires ")
             conans_tools.add_conan_requires(
-                pro_file=conans_tools.find_pro_file(conan_file=self, src_dir=self.get_src_dir()),
-                conanbuildinfo_dir="..")
+                pro_file=conans_tools.find_pro_file(conanfile=self, folder=self.get_src_folder()),
+                folder="..")
         if self.enable_qt_debug_tail:
             self.output.info("enable_qt_debug_tail")
             conans_tools.enable_qt_debug_tail_d(
-                pro_file=conans_tools.find_pro_file(conan_file=self, src_dir=self.get_src_dir()))
+                pro_file=conans_tools.find_pro_file(conanfile=self, folder=self.get_src_folder()))
 
     def build(self):
         self.output.info("build")
         if self.enable_debug_and_release_one_package:
             self.output.info("build_type is none, build both debug & config")
-            QMake(conan_file=self, build_type="Debug").build()
-            QMake(conan_file=self, build_type="Release").build()
+            QMake(conanfile=self, build_type="Debug").build()
+            QMake(conanfile=self, build_type="Release").build()
         elif self.settings.build_type == "Debug" or self.settings.build_type == "Release":
             self.output.info(f"build_type is -> {self.settings.build_type}")
-            QMake(conan_file=self).build()
+            QMake(conanfile=self).build()
         else:
             raise Exception(f"Unsupported build type {self.settings.build_type}")
 
@@ -231,39 +230,80 @@ class QtConanFile(ConanFile):
 
     def package_src(self):
         self.output.info("package_src")
-        conans_tools.copy_src(conan_file=self, src_dir=self.get_src_dir())
+        conans_tools.copy_src(conanfile=self, folder=self.get_src_folder())
 
     def package_include(self):
         self.output.info("package_include")
-        conans_tools.copy_includes(conan_file=self, include_dir=self.find_include_dir())
+        conans_tools.copy_includes(conanfile=self,
+                                   folder=conans_tools.find_include_dir(folder=self.get_src_folder()))
 
     def package_lib(self):
         self.output.info("package_lib")
         if self.enable_debug_and_release_one_package:
-            conans_tools.copy_lib(conan_file=self, lib_dir=self.get_build_debug_dir())
-            conans_tools.copy_lib(conan_file=self, lib_dir=self.get_build_release_dir())
+            conans_tools.copy_lib(conanfile=self, folder=self.get_build_debug_folder())
+            conans_tools.copy_lib(conanfile=self, folder=self.get_build_release_folder())
         else:
-            conans_tools.copy_lib(conan_file=self, lib_dir=self.get_build_dir())
+            conans_tools.copy_lib(conanfile=self, folder=self.get_build_folder())
 
     def package_bin(self):
         self.output.info("package_bin")
         if self.enable_debug_and_release_one_package:
-            conans_tools.copy_bin(conan_file=self, bin_dir=self.get_build_debug_dir())
-            conans_tools.copy_bin(conan_file=self, bin_dir=self.get_build_release_dir())
+            conans_tools.copy_bin(conanfile=self, folder=self.get_build_debug_folder())
+            conans_tools.copy_bin(conanfile=self, folder=self.get_build_release_folder())
         else:
-            conans_tools.copy_bin(conan_file=self, bin_dir=self.get_build_dir())
+            conans_tools.copy_bin(conanfile=self, folder=self.get_build_folder())
 
     def package_info(self):
         self.output.info("package_info")
         if self.enable_qt_debug_tail:
             self.collect_libs_with_qt_debug_tail()
         else:
-            self.cpp_info.libs = tools.collect_libs()
+            self.cpp_info.libs = tools.collect_libs(conanfile=self)
 
     def collect_libs_with_qt_debug_tail(self):
         """
-        collect libs: debug -> {conan_file.name}d, release -> {conan_file.name}
+        collect libs: debug -> {conanfile.name}d, release -> {conanfile.name}
         :return:
         """
         self.cpp_info.release.libs = [f"{self.name}"]
         self.cpp_info.debug.libs = [f"{self.name}d"]
+
+
+class QtPreBuildConanFile(QtConanFile):
+    """
+    This class is designed for prebuild qt libs, and we follow the following file structure:
+       -[source]
+           -[self.name]
+                -[inc/include]
+                -[lib]
+                -[bin]
+           -conanfile.py
+       -[build]
+           -[self.name]
+                -[inc/include]
+                -[lib]
+                -[bin]
+           -conaninfo.txt
+           -conanbuildinfo.pri
+           -conanfile.py
+       -[package]
+           -[include]
+           -[lib]
+           -[bin]
+    """
+
+    def build(self):
+        self.output.info("build pass")
+
+    def package_src(self):
+        self.output.info("package_src pass")
+
+    def package_bin(self):
+        self.output.info("package_bin")
+        conans_tools.copy_bin(conanfile=self,
+                              folder=f"{self.get_src_folder()}/bin/{conans_tools.get_build_type_string_lower(conanfile=self)}/{conans_tools.get_arch_string_lower(conanfile=self)}")
+
+    def package_lib(self):
+        self.output.info("package_lib")
+        conans_tools.copy_lib(conanfile=self,
+                              folder=f"{self.get_src_folder()}/lib/{conans_tools.get_build_type_string_lower(conanfile=self)}/{conans_tools.get_arch_string_lower(conanfile=self)}")
