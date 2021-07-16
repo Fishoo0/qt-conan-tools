@@ -52,6 +52,7 @@ def copy_bin(conanfile, folder):
     conanfile.copy("*.so", dst="bin", src=folder, keep_path=False)
     conanfile.copy("*.dll", dst="bin", src=folder, keep_path=False)
     conanfile.copy("*.pdb", dst="bin", src=folder, keep_path=False)
+    conanfile.copy("*.exe", dst="bin", src=folder, keep_path=False)
 
 
 def get_arch_string_lower(conanfile):
@@ -163,7 +164,7 @@ def git_clone(target_dir, url, branch="master"):
     os.system(f"git clone --depth 1 --single-branch --branch {branch} {url} {target_dir}")
 
 
-def create(user_channel="", build_type_list=["Release", "Debug"], arch_list=["x86", "x86_64"],
+def create(user_channel=None, build_type_list=["Release", "Debug"], arch_list=["x86", "x86_64"],
            qt_versions_list=["5.15.0", "5.15.2"]):
     """
     call conan create to create packages.
@@ -173,6 +174,8 @@ def create(user_channel="", build_type_list=["Release", "Debug"], arch_list=["x8
     :param qt_versions_list:
     :return:
     """
+    if user_channel is None:
+        user_channel = ""
     for arch in arch_list:
         for buildType in build_type_list:
             for qtVersion in qt_versions_list:

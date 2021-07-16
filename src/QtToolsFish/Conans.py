@@ -129,7 +129,7 @@ class QtConanFile(ConanFile):
     description = "This is a library from fish."
     topics = ("qt", "conan", "library")
     settings = "os", "compiler", "build_type", "arch"
-    options = {"qt_version": ["5.15.0", "5.15.2"]}
+    options = {"qt_version": ["5.12.4", "5.15.0", "5.15.2"]}
     default_options = {"qt_version": "5.15.0"}
     generators = "qmake", "cmake"
 
@@ -292,18 +292,33 @@ class QtPreBuildConanFile(QtConanFile):
            -[bin]
     """
 
+    enable_pure_c = False
+
+    def configure(self):
+        pass
+
+    def package_id(self):
+        super(QtPreBuildConanFile, self).package_id()
+        if self.enable_pure_c:
+            del self.info.options.qt_version
+
     def build(self):
         self.output.info("build pass")
 
     def package_src(self):
         self.output.info("package_src pass")
 
-    def package_bin(self):
-        self.output.info("package_bin")
-        conans_tools.copy_bin(conanfile=self,
-                              folder=f"{self.get_src_folder()}/bin/{conans_tools.get_build_type_string_lower(conanfile=self)}/{conans_tools.get_arch_string_lower(conanfile=self)}")
+    def get_build_contents_folder(self, name):
+        if self.enable_debug_and_release_one_package:
+            temp_build_type = ""
+        else:
+            temp_build_type = f"{conans_tools.get_build_type_string_lower(conanfile=self)}"
+        return f"{self.get_src_folder()}/{name}/{temp_build_type}/{conans_tools.get_arch_string_lower(conanfile=self)}"
 
     def package_lib(self):
         self.output.info("package_lib")
-        conans_tools.copy_lib(conanfile=self,
-                              folder=f"{self.get_src_folder()}/lib/{conans_tools.get_build_type_string_lower(conanfile=self)}/{conans_tools.get_arch_string_lower(conanfile=self)}")
+        conans_tools.copy_lib(conanfile=self, folder=self.get_build_contents_folder("lib"))
+
+    def package_bin(self):
+        self.output.info("package_bin")
+        conans_tools.copy_bin(conanfile=self, folder=self.get_build_contents_folder("bin"))
