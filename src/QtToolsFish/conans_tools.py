@@ -149,7 +149,7 @@ def find_include_dir(folder):
     elif os.path.exists(f"{folder}/inc"):
         include_dir = f"{folder}/inc"
     else:
-        include_dir = f"{folder}/"
+        include_dir = folder
     return include_dir
 
 

@@ -147,6 +147,11 @@ class QtConanFile(ConanFile):
     Enable debug and rease in one package
     """
 
+    header_only = False
+    """
+    The library only has only header, no cpp files.
+    """
+
     def get_src_folder(self):
         """
         Getting default src dir
@@ -191,6 +196,9 @@ class QtConanFile(ConanFile):
 
     def package_id(self):
         self.output.info("package_id")
+        if self.header_only:
+            self.info.header_only()
+            return
         if self.enable_debug_and_release_one_package:
             del self.info.settings.build_type
             del self.info.settings.compiler.runtime
@@ -211,6 +219,8 @@ class QtConanFile(ConanFile):
 
     def build(self):
         self.output.info("build")
+        if self.header_only:
+            return
         if self.enable_debug_and_release_one_package:
             self.output.info("build_type is none, build both debug & config")
             QMake(conanfile=self, build_type="Debug").build()
@@ -225,8 +235,9 @@ class QtConanFile(ConanFile):
         self.output.info("package")
         self.package_src()
         self.package_include()
-        self.package_lib()
-        self.package_bin()
+        if not self.header_only:
+            self.package_lib()
+            self.package_bin()
 
     def package_src(self):
         self.output.info("package_src")
@@ -255,7 +266,7 @@ class QtConanFile(ConanFile):
 
     def package_info(self):
         self.output.info("package_info")
-        if self.enable_qt_debug_tail:
+        if not self.header_only and self.enable_qt_debug_tail:
             self.collect_libs_with_qt_debug_tail()
         else:
             self.cpp_info.libs = tools.collect_libs(conanfile=self)
