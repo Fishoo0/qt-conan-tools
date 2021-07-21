@@ -24,7 +24,7 @@ class QMake:
         if build_type is None:
             build_type = conanfile.settings.build_type
         if pro_file is None:
-            pro_file = conanfile.name
+            pro_file = conanfile.get_src_folder()
         self.qt_version = qt_version
         self.arch = arch
         self.build_type = build_type
