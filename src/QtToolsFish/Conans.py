@@ -89,6 +89,10 @@ class QMake:
                 f"call \"%QT_HOME%\\{self.qt_version}\\msvc{self.vs_version}{qt_64_path}\\bin\\qtenv2.bat\"")
             self.append_cmd(f"call \"%VS{self.vs_version}_HOME%\\VC\\Auxiliary\\Build\\vcvars{vs_64_path}.bat\"")
 
+    def set_symstore(self):
+        self.append_cmd(
+            f"symstore add /compress /r /f {self.out_dir} /s %fileServerPath%\Symbols /t {self.pro_file} /v %BUILD_NUMBER% -c \"%DATE%\"")
+
     def build(self):
         print("Start to make project ...")
         self.setup_evn()

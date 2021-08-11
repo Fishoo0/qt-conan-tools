@@ -2,6 +2,8 @@ import fnmatch
 import logging
 import os
 
+from conans import tools
+
 
 def copy_src(conanfile, folder):
     """
@@ -94,6 +96,10 @@ def add_conan_requires(pro_file, folder):
     :param pro_file:
     :return:
     """
+    tools.replace_in_file(pro_file,
+                          "include($$(applyConanPlugin))",
+                          '''# include($$(applyConanPlugin)) disable plugin, and use conan's raw setting ''')
+
     with open(pro_file, 'r+') as f:
         content = f.read()
         if content is None or str(content).find("conan_basic_setup") == -1:
@@ -196,3 +202,15 @@ def upload(package_version, user_channel=None, server="tal-qt-repository-public"
     if force:
         temp_force = "--force"
     os.system(f"conan upload {package_version}{temp_user_channel} -r={server} {temp_force} --all --confirm")
+
+
+def remove_cache(package_version, user_channel=None, server="tal-qt-repository-public", remove_remote=False):
+    temp_user_channel = ""
+    if user_channel is not None:
+        if str(user_channel).find("@") == -1:
+            temp_user_channel = f"@{user_channel}"
+        else:
+            temp_user_channel = user_channel
+    os.system(f"conan remove {package_version}{temp_user_channel} --src --builds --package --force")
+    if remove_remote:
+        os.system(f"conan remove {package_version}{temp_user_channel} --packages --force -r={server}")
