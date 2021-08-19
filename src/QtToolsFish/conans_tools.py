@@ -98,7 +98,8 @@ def add_conan_requires(pro_file, folder):
     """
     tools.replace_in_file(pro_file,
                           "include($$(applyConanPlugin))",
-                          '''# include($$(applyConanPlugin)) disable plugin, and use conan's raw setting ''')
+                          '''# include($$(applyConanPlugin)) disable plugin, and use conan's raw setting ''',
+                          False)
 
     with open(pro_file, 'r+') as f:
         content = f.read()

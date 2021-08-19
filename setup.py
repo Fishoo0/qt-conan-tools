@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="qt-tools-fish-test1",
-    version="0.0.7",
+    version="0.0.8",
     author="Fish",
     author_email="790105840@qq.com",
     description="qt conan tools.",
