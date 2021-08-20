@@ -80,6 +80,7 @@ class QMake:
             qt_64_path = ""
             vs_64_path = "32"
 
+        self.append_cmd(f"set PATH={qt_home}\Tools\QtCreator\\bin;%PATH%")
         if str(self.qt_version).startswith("5.15."):
             self.append_cmd(
                 f"call \"{qt_home}\\{self.qt_version}\\msvc{self.vs_version}{qt_64_path}\\bin\\qtenv2.bat\"")
@@ -166,7 +167,10 @@ class QtConanFile(ConanFile):
         Getting debug dir
         :return: [debug]
         """
-        return "./debug/"
+        target_path = "./debug/"
+        if os.path.exists(target_path) and os.path.isdir(target_path) and len(os.listdir(target_path)) > 0:
+            return target_path
+        return "./"
 
     @staticmethod
     def get_build_release_folder():
@@ -174,7 +178,10 @@ class QtConanFile(ConanFile):
         Getting release dir
         :return: [release]
         """
-        return "./release/"
+        target_path = "./release/"
+        if os.path.exists(target_path) and os.path.isdir(target_path) and len(os.listdir(target_path)) > 0:
+            return target_path
+        return "./"
 
     def get_build_folder(self):
         """
