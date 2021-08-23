@@ -109,9 +109,9 @@ class QtConanFile(ConanFile):
     """
     This is a Qt extended ConanFile, we follow the following file structure:
         -[source]
-            -[self.name]
+            -[self.get_library_name()]
         -[build]
-            -[self.name]
+            -[self.get_library_name()]
             -[self.build_type]
             -conaninfo.txt
             -conanbuildinfo.pri
@@ -119,7 +119,7 @@ class QtConanFile(ConanFile):
             -[include]
             -[lib]
             -[bin]
-            -[self.name]
+            -[self.get_library_name()]
 
     """
     TAG = "QtConanFile"
@@ -142,7 +142,7 @@ class QtConanFile(ConanFile):
     git_branch = "master"
     enable_qt_debug_tail = False
     """
-    Enable [self.name]d debug lib name.
+    Enable [self.get_library_name()]d debug lib name.
     """
     enable_debug_and_release_one_package = False
     """
@@ -154,12 +154,15 @@ class QtConanFile(ConanFile):
     The library only has only header, no cpp files.
     """
 
+    def get_library_name(self):
+        return f"{self.name}"
+
     def get_src_folder(self):
         """
         Getting default src dir
-        :return: [self.name]
+        :return: get_library_name()
         """
-        return f"./{self.name}/"
+        return f"./{self.get_library_name()}/"
 
     @staticmethod
     def get_build_debug_folder():
@@ -213,8 +216,8 @@ class QtConanFile(ConanFile):
 
     def source(self):
         self.output.info("source")
-        if self.git_url is not None:
-            conans_tools.git_clone(target_dir=f"{self.name}", url=self.git_url, branch=self.git_branch)
+        if self.git_url is not None and self.exports_sources is None:
+            conans_tools.git_clone(target_dir=self.get_library_name(), url=self.git_url, branch=self.git_branch)
         if len(self.requires) > 0:
             self.output.info("requires length > 0, append conan requires ")
             conans_tools.add_conan_requires(
@@ -284,21 +287,21 @@ class QtConanFile(ConanFile):
         collect libs: debug -> {conanfile.name}d, release -> {conanfile.name}
         :return:
         """
-        self.cpp_info.release.libs = [f"{self.name}"]
-        self.cpp_info.debug.libs = [f"{self.name}d"]
+        self.cpp_info.release.libs = [self.get_library_name()]
+        self.cpp_info.debug.libs = [f"{self.get_library_name()}d"]
 
 
 class QtPreBuildConanFile(QtConanFile):
     """
     This class is designed for prebuild qt libs, and we follow the following file structure:
        -[source]
-           -[self.name]
+           -[self.get_library_name()]
                 -[inc/include]
                 -[lib]
                 -[bin]
            -conanfile.py
        -[build]
-           -[self.name]
+           -[self.get_library_name()]
                 -[inc/include]
                 -[lib]
                 -[bin]
