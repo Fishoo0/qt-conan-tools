@@ -1,6 +1,7 @@
 import fnmatch
 import logging
 import os
+import shutil
 
 from conans import tools
 
@@ -215,3 +216,11 @@ def remove_cache(package_version, user_channel=None, server="tal-qt-repository-p
     os.system(f"conan remove {package_version}{temp_user_channel} --src --builds --package --force")
     if remove_remote:
         os.system(f"conan remove {package_version}{temp_user_channel} --packages --force -r={server}")
+
+
+def move_dir_files_to_folder(folder_name):
+    temp_dir = f"../{folder_name}"
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    shutil.copytree("./", temp_dir)
+    shutil.rmtree("./", ignore_errors=True)
+    shutil.move(temp_dir, "./")
