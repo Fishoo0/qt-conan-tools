@@ -43,6 +43,9 @@ def copy_lib(conanfile, folder):
     conanfile.copy("*.exp", dst="lib", src=folder, keep_path=False)
     conanfile.copy("*.ini", dst="lib", src=folder, keep_path=False)
     conanfile.copy("*.dll", dst="lib", src=folder, keep_path=False)
+    conanfile.copy("*.dylib", dst="lib", src=folder, keep_path=False)
+    conanfile.copy("*.framework", dst="lib", src=folder, keep_path=False)
+    conanfile.copy("*.dSYM", dst="lib", src=folder, keep_path=False)
 
 
 def copy_bin(conanfile, folder):
