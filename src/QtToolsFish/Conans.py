@@ -8,7 +8,7 @@ import os
 
 from conans import ConanFile, tools
 
-from Qt import QMake
+from .Qt import QMake
 from . import conans_tools
 
 
