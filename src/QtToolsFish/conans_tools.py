@@ -207,7 +207,7 @@ def create(user_channel=None, qt_versions_list=["5.15.0"], build_type_list=["Rel
                     f"conan create . {user_channel} -s arch={arch} -s build_type={buildType} -o qt_version={qtVersion}")
 
 
-def upload(package_version, user_channel=None, server="tal-qt-repository-public", force=False):
+def upload(package_version, user_channel=None, server="accumulating", force=False):
     temp_user_channel = ""
     temp_force = ""
     if user_channel is not None:
@@ -220,7 +220,7 @@ def upload(package_version, user_channel=None, server="tal-qt-repository-public"
     os.system(f"conan upload {package_version}{temp_user_channel} -r={server} {temp_force} --all --confirm")
 
 
-def remove_cache(package_version, user_channel=None, server="tal-qt-repository-public", remove_remote=False):
+def remove_cache(package_version, user_channel=None, server="accumulating", remove_remote=False):
     temp_user_channel = ""
     if user_channel is not None:
         if str(user_channel).find("@") == -1:
